@@ -22,6 +22,7 @@
       </div>
 
       <div id="report" hidden>
+        <div id="coach-usage" class="usage"></div>
         <div class="score-row">
           <div class="score"><span id="overall">0</span><small>/100</small></div>
           <p id="summary"></p>
@@ -39,12 +40,29 @@
         <h2>What changed and why</h2>
         <ul id="changes" class="changes"></ul>
 
+        <h2>Recommended model</h2>
+        <div class="recommend">
+          <strong id="rec-model"></strong>
+          <p id="rec-reason"></p>
+        </div>
+
         <div class="actions">
+          <label for="model-select" class="inline">Run on</label>
+          <select id="model-select"></select>
           <button id="compare-btn">Run both and compare outputs</button>
         </div>
+        <div id="compare-total" class="usage" hidden></div>
         <div id="compare" class="compare" hidden>
-          <div><h3>Original prompt's answer</h3><div id="out-original" class="output"></div></div>
-          <div><h3>Improved prompt's answer</h3><div id="out-improved" class="output"></div></div>
+          <div>
+            <h3>Original prompt's answer</h3>
+            <div id="usage-original" class="usage"></div>
+            <div id="out-original" class="output"></div>
+          </div>
+          <div>
+            <h3>Improved prompt's answer</h3>
+            <div id="usage-improved" class="usage"></div>
+            <div id="out-improved" class="output"></div>
+          </div>
         </div>
       </div>
     </section>
