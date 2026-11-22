@@ -25,28 +25,40 @@ class PromptIn(BaseModel):
 class CompareIn(BaseModel):
     original: str = Field(min_length=1, max_length=20000)
     improved: str = Field(min_length=1, max_length=20000)
+    model: coach.ModelId
+
+
+@app.get("/api/models")
+def models_endpoint():
+    """Model list with prices, for the model picker in the frontend."""
+    return [{"id": mid, **info} for mid, info in coach.MODELS.items()]
 
 
 @app.post("/api/coach")
 def coach_endpoint(body: PromptIn):
     try:
-        report = coach.coach_prompt(body.prompt).model_dump()
+        report, usage = coach.coach_prompt(body.prompt)
     except coach.CoachError as e:
         raise HTTPException(status_code=502, detail=str(e))
-    session_id = db.save_session(body.prompt, report)
-    return {"id": session_id, "report": report}
+    report, usage = report.model_dump(), usage.model_dump()
+    session_id = db.save_session(body.prompt, report, usage)
+    return {"id": session_id, "report": report, "usage": usage}
 
 
 @app.post("/api/compare")
 def compare_endpoint(body: CompareIn):
-    """Run both prompts at the same time and return the two answers side by side."""
+    """Run both prompts at the same time on the chosen model and return both answers."""
     try:
         with ThreadPoolExecutor(max_workers=2) as pool:
-            original = pool.submit(coach.run_prompt, body.original)
-            improved = pool.submit(coach.run_prompt, body.improved)
-            return {"original": original.result(), "improved": improved.result()}
+            original = pool.submit(coach.run_prompt, body.original, body.model)
+            improved = pool.submit(coach.run_prompt, body.improved, body.model)
+            results = {"original": original.result(), "improved": improved.result()}
     except coach.CoachError as e:
         raise HTTPException(status_code=502, detail=str(e))
+    return {
+        name: {"text": text, "usage": usage.model_dump()}
+        for name, (text, usage) in results.items()
+    }
 
 
 @app.get("/api/history")

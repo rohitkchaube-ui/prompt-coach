@@ -5,6 +5,7 @@ import os
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 
 DB_PATH = Path(os.environ.get("PROMPT_COACH_DB", Path(__file__).resolve().parent.parent / "prompt_coach.db"))
 
@@ -30,7 +31,9 @@ def init_db() -> None:
         )
 
 
-def save_session(original_prompt: str, report: dict) -> int:
+def save_session(original_prompt: str, report: dict, usage: Optional[dict] = None) -> int:
+    # Usage is stored inside the JSON blob, so older databases need no migration.
+    report = {**report, "usage": usage}
     with _connect() as conn:
         cur = conn.execute(
             "INSERT INTO sessions (created_at, original_prompt, overall_score, report_json) VALUES (?, ?, ?, ?)",
@@ -49,16 +52,21 @@ def list_sessions(limit: int = 50) -> list:
         rows = conn.execute(
             "SELECT * FROM sessions ORDER BY id DESC LIMIT ?", (limit,)
         ).fetchall()
-    return [
-        {
-            "id": r["id"],
-            "created_at": r["created_at"],
-            "original_prompt": r["original_prompt"],
-            "overall_score": r["overall_score"],
-            "report": json.loads(r["report_json"]),
-        }
-        for r in rows
-    ]
+    sessions = []
+    for r in rows:
+        report = json.loads(r["report_json"])
+        usage = report.pop("usage", None)  # sessions saved before this feature have none
+        sessions.append(
+            {
+                "id": r["id"],
+                "created_at": r["created_at"],
+                "original_prompt": r["original_prompt"],
+                "overall_score": r["overall_score"],
+                "report": report,
+                "usage": usage,
+            }
+        )
+    return sessions
 
 
 def delete_session(session_id: int) -> bool:

@@ -2,6 +2,7 @@
 
 const $ = (id) => document.getElementById(id);
 let current = null; // { original, report }
+let models = []; // [{ id, label, input, output, best_for }]
 
 async function api(path, options = {}) {
   const res = await fetch(path, {
@@ -27,10 +28,55 @@ function scoreColor(score10) {
   return "var(--bad)";
 }
 
-function renderReport(original, report) {
+const modelLabel = (id) => (models.find((m) => m.id === id) || {}).label || id;
+
+function formatCost(usd) {
+  if (usd === 0) return "$0";
+  if (usd < 0.01) return `$${usd.toFixed(4)}`;
+  return `$${usd.toFixed(3)}`;
+}
+
+// Shows "Claude Opus 5.5 · 1,234 in · 567 out · $0.0153" above a response.
+function renderUsage(el, usage, prefix = "") {
+  if (!usage) {
+    el.replaceChildren();
+    return;
+  }
+  const n = (x) => x.toLocaleString();
+  el.innerHTML = `
+    <span>${prefix}<b></b></span>
+    <span><b>${n(usage.input_tokens)}</b> input tokens</span>
+    <span><b>${n(usage.output_tokens)}</b> output tokens</span>
+    <span>Cost <b>${formatCost(usage.cost_usd)}</b></span>`;
+  el.querySelector("span b").textContent = modelLabel(usage.model);
+}
+
+function renderModelPicker(recommended) {
+  $("model-select").replaceChildren(
+    ...models.map((m) => {
+      const opt = document.createElement("option");
+      opt.value = m.id;
+      opt.textContent =
+        `${m.label} · $${m.input} in / $${m.output} out per 1M tokens` +
+        (m.id === recommended ? " (recommended)" : "");
+      return opt;
+    })
+  );
+  if (recommended) $("model-select").value = recommended;
+}
+
+function renderReport(original, report, usage) {
   current = { original, report };
   $("report").hidden = false;
   $("compare").hidden = true;
+  $("compare-total").hidden = true;
+  renderUsage($("coach-usage"), usage, "Coaching by ");
+
+  // Sessions saved before this feature have no recommendation.
+  const rec = report.recommended_model;
+  $("rec-model").textContent = rec ? modelLabel(rec) : "No recommendation for this older session";
+  $("rec-reason").textContent = report.recommendation_reason || "";
+  renderModelPicker(rec);
   $("overall").textContent = report.overall_score;
   $("summary").textContent = report.summary;
   $("improved").textContent = report.improved_prompt;
@@ -63,11 +109,11 @@ async function coach() {
   $("coach-btn").disabled = true;
   setStatus("Claude is reviewing your prompt...");
   try {
-    const { report } = await api("/api/coach", {
+    const { report, usage } = await api("/api/coach", {
       method: "POST",
       body: JSON.stringify({ prompt }),
     });
-    renderReport(prompt, report);
+    renderReport(prompt, report, usage);
     setStatus("");
     loadHistory();
   } catch (err) {
@@ -80,14 +126,24 @@ async function coach() {
 async function compare() {
   if (!current) return;
   $("compare-btn").disabled = true;
-  setStatus("Running both prompts...");
+  const model = $("model-select").value;
+  setStatus(`Running both prompts on ${modelLabel(model)}...`);
   try {
     const out = await api("/api/compare", {
       method: "POST",
-      body: JSON.stringify({ original: current.original, improved: current.report.improved_prompt }),
+      body: JSON.stringify({
+        original: current.original,
+        improved: current.report.improved_prompt,
+        model,
+      }),
     });
-    $("out-original").textContent = out.original;
-    $("out-improved").textContent = out.improved;
+    for (const side of ["original", "improved"]) {
+      renderUsage($(`usage-${side}`), out[side].usage);
+      $(`out-${side}`).textContent = out[side].text;
+    }
+    const total = out.original.usage.cost_usd + out.improved.usage.cost_usd;
+    $("compare-total").innerHTML = `<span>Comparison total: <b>${formatCost(total)}</b></span>`;
+    $("compare-total").hidden = false;
     $("compare").hidden = false;
     setStatus("");
   } catch (err) {
@@ -109,7 +165,7 @@ async function loadHistory() {
       li.querySelector(".hist-text").textContent = s.original_prompt;
       li.addEventListener("click", () => {
         $("prompt").value = s.original_prompt;
-        renderReport(s.original_prompt, s.report);
+        renderReport(s.original_prompt, s.report, s.usage);
       });
       li.querySelector(".del").addEventListener("click", async (e) => {
         e.stopPropagation();
@@ -132,4 +188,7 @@ $("prompt").addEventListener("keydown", (e) => {
   if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) coach();
 });
 
-loadHistory();
+api("/api/models")
+  .then((list) => (models = list))
+  .catch(() => {})
+  .finally(loadHistory);
