@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prompt Coach</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Prompt Coach</h1>
+    <p class="tagline">Write a prompt. Get it graded, improved, and see the difference.</p>
+  </header>
+
+  <main>
+    <section class="workspace">
+      <label for="prompt">Your prompt</label>
+      <textarea id="prompt" rows="7" placeholder="e.g. write me a blog post about productivity"></textarea>
+      <div class="actions">
+        <button id="coach-btn" class="primary">Coach me</button>
+        <span id="status" role="status"></span>
+      </div>
+
+      <div id="report" hidden>
+        <div class="score-row">
+          <div class="score"><span id="overall">0</span><small>/100</small></div>
+          <p id="summary"></p>
+        </div>
+
+        <h2>Breakdown</h2>
+        <ul id="criteria" class="criteria"></ul>
+
+        <h2>Improved prompt</h2>
+        <div class="improved">
+          <pre id="improved"></pre>
+          <button id="copy-btn" class="ghost">Copy</button>
+        </div>
+
+        <h2>What changed and why</h2>
+        <ul id="changes" class="changes"></ul>
+
+        <div class="actions">
+          <button id="compare-btn">Run both and compare outputs</button>
+        </div>
+        <div id="compare" class="compare" hidden>
+          <div><h3>Original prompt's answer</h3><div id="out-original" class="output"></div></div>
+          <div><h3>Improved prompt's answer</h3><div id="out-improved" class="output"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="history">
+      <h2>History</h2>
+      <p id="history-empty" class="muted">Your coaching sessions will show up here.</p>
+      <ul id="history-list"></ul>
+    </aside>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
