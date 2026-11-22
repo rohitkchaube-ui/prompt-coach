@@ -1,0 +1,33 @@
+# Runs the test suite on GitHub's servers for every push and pull request.
+# Results show up as a green check (or red X) next to commits and in PRs.
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Test on your local version (3.10) and a newer one, to catch version-specific bugs.
+        python-version: ["3.10", "3.12"]
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # No API key needed: the tests replace Claude with a fake.
+      - name: Run tests
+        run: pytest -v
