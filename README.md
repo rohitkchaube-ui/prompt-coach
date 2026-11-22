@@ -1,5 +1,7 @@
 # Prompt Coach
 
+[![Tests](https://github.com/rohitkchaube-ui/prompt-coach/actions/workflows/tests.yml/badge.svg)](https://github.com/rohitkchaube-ui/prompt-coach/actions/workflows/tests.yml)
+
 A small full-stack app that helps you write better prompts for Claude.
 
 1. **Write** a prompt you plan to use.
