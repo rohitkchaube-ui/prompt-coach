@@ -172,13 +172,48 @@ select {
 }
 
 .history h2 { margin-top: 0; }
-#history-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+#history-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
 #history-list li {
-  display: flex; gap: 10px; align-items: center;
-  padding: 8px; border-radius: 8px; cursor: pointer;
-  border: 1px solid transparent;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
 }
-#history-list li:hover { border-color: var(--border); background: var(--bg); }
-.pill { flex: none; font-weight: 700; font-size: 0.85rem; min-width: 38px; text-align: center; padding: 2px 6px; border-radius: 999px; background: var(--accent-soft); }
-.hist-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9rem; }
-.del { border: none; background: none; color: var(--muted); padding: 2px 6px; }
+#history-list li:hover { border-color: var(--accent); background: var(--bg); }
+
+.hist-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.pill {
+  flex: none;
+  font-weight: 700;
+  font-size: 0.8rem;
+  min-width: 34px;
+  text-align: center;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+}
+.hist-date { flex: 1; font-size: 0.8rem; color: var(--muted); }
+
+/* Wrap long prompts and show at most 3 lines; hover the item to see the full prompt. */
+.hist-text {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.del {
+  border: none;
+  background: none;
+  color: var(--muted);
+  padding: 0 4px;
+  font-size: 0.85rem;
+  opacity: 0.6;
+}
+.del:hover { color: var(--bad); opacity: 1; }
