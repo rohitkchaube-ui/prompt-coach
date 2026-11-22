@@ -30,6 +30,13 @@ function scoreColor(score10) {
 
 const modelLabel = (id) => (models.find((m) => m.id === id) || {}).label || id;
 
+// "2026-11-22T12:47:17+00:00" -> "Nov 22, 12:47 PM" in the viewer's local time.
+function formatDate(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
 function formatCost(usd) {
   if (usd === 0) return "$0";
   if (usd < 0.01) return `$${usd.toFixed(4)}`;
@@ -160,8 +167,17 @@ async function loadHistory() {
     ...sessions.map((s) => {
       const li = document.createElement("li");
       li.title = s.original_prompt;
-      li.innerHTML = `<span class="pill"></span><span class="hist-text"></span><button class="del" title="Delete">✕</button>`;
-      li.querySelector(".pill").textContent = s.overall_score;
+      li.innerHTML = `
+        <div class="hist-meta">
+          <span class="pill"></span>
+          <span class="hist-date"></span>
+          <button class="del" title="Delete" aria-label="Delete this session">✕</button>
+        </div>
+        <p class="hist-text"></p>`;
+      const pill = li.querySelector(".pill");
+      pill.textContent = s.overall_score;
+      pill.style.color = scoreColor(s.overall_score / 10);
+      li.querySelector(".hist-date").textContent = formatDate(s.created_at);
       li.querySelector(".hist-text").textContent = s.original_prompt;
       li.addEventListener("click", () => {
         $("prompt").value = s.original_prompt;
